@@ -1,6 +1,5 @@
 .streamlit
 .venv
 .env
-commands.md
-test.py
+
 

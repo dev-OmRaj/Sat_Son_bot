@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from datetime import datetime
-from streamlit_gsheets import GSheetsConnection
+import requests
 
 def satbot():
     system_prompt = """
@@ -71,8 +71,6 @@ def main():
     load_dotenv()
     client = genai.Client(api_key=os.getenv("GOOGLE_GEMINI_KEY"))
 
-    conn = st.connection("gsheets", type=GSheetsConnection)
-
     if 'page' not in st.session_state:
         st.session_state.page = "selection page"
     if 'persona' not in st.session_state:
@@ -131,14 +129,17 @@ def main():
             bot_response = st.write_stream(chunk.text for chunk in response)
 
             try:
-                new_row = {
-                    "timestamp":[str(datetime.now())],
-                    "user_id":[st.session_state.user_id],
-                    "persona": [persona],
-                    "user_query": [user_query],
-                    "bot_response":[bot_response]
+                form_url = st.secrets["FORM_URL"]
+
+                form_data ={
+                    "entry.1558781202": str(datetime.now()),
+                    "entry.912658097": st.session_state.user_id,
+                    "entry.707427284": persona,
+                    "entry.1135525249": user_query,
+                    "entry.997850045": bot_response
                 }
-                conn.create(data=new_row)
+                requests.post(form_url, data=form_data)
+                
             except Exception as e:
                 print(f"Failed to log in to Google Sheets:{e}")
             st.session_state.history.append({'query':user_query, 'bot_response':bot_response})
