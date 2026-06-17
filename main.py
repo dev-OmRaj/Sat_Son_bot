@@ -1,11 +1,9 @@
 import os
-import time
 import uuid
 import streamlit as st
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from datetime import datetime
 import requests
 
 def satbot():
@@ -61,10 +59,6 @@ response: bhai log mai bihar mai idhar udhar jaa raha hu even I don't know to rt
 def generate_response():
     pass
 
-# def stream_data(response):
-#     for word in response.split(" "):
-#         yield word + " "
-#         time.sleep(0.03)
 
 def main():
 
@@ -86,12 +80,12 @@ def main():
 
         st.title("Welcome to Persona Bot!")
         st.markdown("`Disclaimer: This bot does not have Context.`")
-        persona = st.selectbox("Choose Your Persona ?", ["SatBOT", "SonBOT"], index=None)
+        chose_persona = st.selectbox("Choose Your Persona ?", ["SatBOT", "SonBOT"], index=None)
 
-        if persona:
-            st.success(f"You Choose {persona}.")
+        if chose_persona:
+            st.success(f"You Choose {chose_persona}.")
             st.session_state.page = "chat page"
-            st.session_state.persona = persona
+            st.session_state.persona = chose_persona
             st.rerun()
         
     else: 
@@ -102,10 +96,10 @@ def main():
             st.session_state.history = []
             st.rerun()
 
-        persona = st.session_state.persona
-        st.title(f"Chatting With {persona}")
+        chose_persona = st.session_state.persona
+        st.title(f"Chatting With {chose_persona}")
 
-        if persona == "SatBOT":
+        if chose_persona == "SatBOT":
             system_prompt = satbot()
         else:
             system_prompt = sonbot()
@@ -113,13 +107,13 @@ def main():
 
         for chat in st.session_state.history:
             st.write(f"**User**: {chat['query']}")
-            st.write(f"**{persona}**: {chat['bot_response']}")
+            st.write(f"**{chose_persona}**: {chat['bot_response']}")
             st.write("-----")
 
         if user_query:= st.chat_input("bol bhai.."):
                 
             response = client.models.generate_content_stream(
-                model="gemini-2.5-flash-lite",
+                model="gemini-2.5-flash",
                 contents = user_query,
                 config=types.GenerateContentConfig(
                     system_instruction=system_prompt,
@@ -130,17 +124,26 @@ def main():
 
             try:
                 form_url = st.secrets["FORM_URL"]
+                print(form_url)
+                headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                }
 
                 form_data ={
-                    "entry.1558781202": str(datetime.now()),
-                    "entry.912658097": st.session_state.user_id,
-                    "entry.707427284": persona,
-                    "entry.1135525249": user_query,
-                    "entry.997850045": bot_response
+                    "entry.501749782": str(st.session_state.user_id),
+                    "entry.6025209": str(chose_persona),
+                    "entry.1644383361": str(user_query),
+                    "entry.1255568504": str(bot_response)
                 }
-                requests.post(form_url, data=form_data)
-                
+                res = requests.post(form_url, data=form_data)
+
+
+
+                res.raise_for_status()
+                st.toast("Loggeed to sheet")
+
             except Exception as e:
+                st.error(f"Form submission failed: {e}")
                 print(f"Failed to log in to Google Sheets:{e}")
             st.session_state.history.append({'query':user_query, 'bot_response':bot_response})
 
