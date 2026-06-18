@@ -3,7 +3,7 @@ import uuid
 import streamlit as st
 from dotenv import load_dotenv
 from google import genai
-from google.genai import types
+from google.genai import types, errors
 import requests
 
 def satbot():
@@ -112,15 +112,24 @@ def main():
 
         if user_query:= st.chat_input("bol bhai.."):
                 
-            response = client.models.generate_content_stream(
-                model="gemini-2.5-flash",
-                contents = user_query,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    temperature=0.8
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents = user_query,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        temperature=0.8
+                    )
                 )
-            )
-            bot_response = st.write_stream(chunk.text for chunk in response)
+                bot_response = response.text
+            
+            except errors.APIError as e:
+                if e.code == 429:
+                    st.markdown("`ERROR`: Request Quota for today is exhausted.\nCome back tomorrow.")
+                else:
+                    st.write("`ERROR`: Their is some error. Lets the developer resolve the issue.\nCome back tommorow.")
+
+                exit()
 
             try:
                 form_url = st.secrets["FORM_URL"]
