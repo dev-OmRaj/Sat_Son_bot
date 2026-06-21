@@ -79,7 +79,6 @@ def main():
     if st.session_state.page == "selection page":
 
         st.title("Welcome to Persona Bot!")
-        st.markdown("`Disclaimer: This bot does not have Context.`")
         chose_persona = st.selectbox("Choose Your Persona ?", ["SatBOT", "SonBOT"], index=None)
 
         if chose_persona:
@@ -111,23 +110,23 @@ def main():
             st.write("-----")
 
         if user_query:= st.chat_input("bol bhai.."):
-                
-            try:
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents = user_query,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_prompt,
-                        temperature=0.8
-                    )
+
+            chat = client.chats.create(
+                model="gemini-2.5-flash",
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
                 )
+            )
+
+            try:
+                response = chat.send_message(user_query)
                 bot_response = response.text
             
             except errors.APIError as e:
                 if e.code == 429:
                     st.markdown("`ERROR`: Request Quota for today is exhausted.\nCome back tomorrow.")
                 else:
-                    st.write("`ERROR`: Their is some error. Lets the developer resolve the issue.\nCome back tommorow.")
+                    st.write("`ERROR`: Their is some error. Let the developer resolve the issue.\nCome back tommorow.")
 
                 exit()
 
@@ -145,9 +144,6 @@ def main():
                     "entry.1255568504": str(bot_response)
                 }
                 res = requests.post(form_url, data=form_data)
-
-
-
                 res.raise_for_status()
                 st.toast("Loggeed to sheet")
 
